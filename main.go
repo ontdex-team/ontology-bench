@@ -23,9 +23,9 @@ func main() {
 		return
 	}
 	sdk := goSdk.NewOntologySdk()
-	restClient := client.NewRpcClient()
-	restClient.SetAddress(cfg.Rpc)
-	sdk.SetDefaultClient(restClient)
+	rpcClient := client.NewRpcClient()
+	rpcClient.SetAddress(cfg.Rpc)
+	sdk.SetDefaultClient(rpcClient)
 	var wallet, _ = sdk.OpenWallet(cfg.Wallet)
 	account, err := wallet.GetDefaultAccount([]byte(cfg.Password))
 	if err != nil {
