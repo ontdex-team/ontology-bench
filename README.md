@@ -15,7 +15,12 @@ test ontology tps, only support oep-4 token transfer bench at current.
   "Amount": 1, // amount per transfer
   "GasPrice": 500,
   "GasLimit": 20000,
-  "Rpc": "http://polaris4.ont.io:20336", // ontology network rpc address
+  "Rpc": [
+    "http://polaris1.ont.io:20336",
+    "http://polaris2.ont.io:20336",
+    "http://polaris3.ont.io:20336",
+    "http://polaris4.ont.io:20336"
+  ], // ontology network rpc address
   "TxNum": 100, // tx num per factor
   "TxFactory": 1, // tx factor
   "RoutineNum": 2, // use go routine to handle bench
