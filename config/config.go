@@ -12,7 +12,7 @@ type Config struct {
 	Contract   string
 	To         string
 	Amount     uint64
-	Rpc        string
+	Rpc        []string
 	TxNum      uint // whole tx num is *TxFactor
 	TxFactor   uint
 	RoutineNum uint // whole tx save to RoutineNum files, and one go-routine per file
