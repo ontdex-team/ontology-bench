@@ -1,12 +1,17 @@
 {
   "Wallet": "wallet.dat",
-  "Password": "pwd",
+  "Password": "passwordtest",
   "Contract": "4ef9e947c975eacb60c75b542c8d2fea36e09c65",
   "To": "AdTgdGPjahJjubZU19AwBu9F3oE4hncx4u",
   "Amount": 1,
   "GasPrice": 500,
   "GasLimit": 20000,
-  "Rpc": "http://polaris4.ont.io:20336",
+  "Rpc": [
+    "http://polaris1.ont.io:20336",
+    "http://polaris2.ont.io:20336",
+    "http://polaris3.ont.io:20336",
+    "http://polaris4.ont.io:20336"
+  ],
   "TxNum": 100,
   "TxFactor": 1,
   "RoutineNum": 2,
