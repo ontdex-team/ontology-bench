@@ -23,9 +23,6 @@ func main() {
 		return
 	}
 	sdk := goSdk.NewOntologySdk()
-	rpcClient := client.NewRpcClient()
-	rpcClient.SetAddress(cfg.Rpc)
-	sdk.SetDefaultClient(rpcClient)
 	var wallet, _ = sdk.OpenWallet(cfg.Wallet)
 	account, err := wallet.GetDefaultAccount([]byte(cfg.Password))
 	if err != nil {
@@ -51,12 +48,16 @@ func main() {
 	txNumPerRoutine := txNum / cfg.RoutineNum
 	tpsPerRoutine := int64(cfg.TPS / cfg.RoutineNum)
 	for i := uint(0); i < cfg.RoutineNum; i++ {
-		go func(nonce uint32, fileIndex uint) {
+		go func(nonce uint32, routineIndex uint) {
+			sendTxSdk := goSdk.NewOntologySdk()
+			rpcClient := client.NewRpcClient()
+			rpcClient.SetAddress(cfg.Rpc[int(routineIndex)%len(cfg.Rpc)])
+			sendTxSdk.SetDefaultClient(rpcClient)
 			startTime := time.Now().Unix()
 			sentNum := int64(0)
 			var fileObj *os.File
 			if cfg.SaveTx {
-				fileObj, err = os.OpenFile(fmt.Sprintf("invoke_%d.txt", fileIndex),
+				fileObj, err = os.OpenFile(fmt.Sprintf("invoke_%d.txt", routineIndex),
 					os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644)
 				if err != nil {
 					fmt.Println("Failed to open the file", err.Error())
@@ -64,19 +65,19 @@ func main() {
 				}
 			}
 			for j := uint(0); j < txNumPerRoutine; j++ {
-				mutTx, err := sdk.NeoVM.NewNeoVMInvokeTransaction(cfg.GasLimit, cfg.GasLimit, contractAddress, params)
+				mutTx, err := sendTxSdk.NeoVM.NewNeoVMInvokeTransaction(cfg.GasLimit, cfg.GasLimit, contractAddress, params)
 				if err != nil {
 					fmt.Println("contract tx err", err)
 					os.Exit(1)
 				}
 				mutTx.Nonce = nonce
-				err = sdk.SignToTransaction(mutTx, account)
+				err = sendTxSdk.SignToTransaction(mutTx, account)
 				if err != nil {
 					log.Errorf("sign tx failed, err: %s", err)
 					continue
 				}
 				if cfg.SendTx {
-					hash, err := sdk.SendTransaction(mutTx)
+					hash, err := sendTxSdk.SendTransaction(mutTx)
 					if err != nil {
 						log.Errorf("send tx failed, err: %s", err)
 					} else {
