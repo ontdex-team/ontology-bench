@@ -174,7 +174,7 @@ func testOep4Transfer(cfg *config.Config, account *goSdk.Account) {
 		<-exitChan
 	}
 	endTestTime := time.Now().UnixNano() / 1e6
-	log.Infof("send tps is %f", float64(txNum)/float64(endTestTime-startTestTime))
+	log.Infof("send tps is %f", float64(txNum*1000)/float64(endTestTime-startTestTime))
 }
 
 func balanceOf(cfg *config.Config, sdk *goSdk.OntologySdk, address common.Address) {
