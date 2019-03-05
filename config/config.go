@@ -7,20 +7,22 @@ import (
 )
 
 type Config struct {
-	Wallet     string
-	Password   string
-	Contract   string
-	To         string
-	Amount     uint64
-	Rpc        []string
-	TxNum      uint // whole tx num is *TxFactor
-	TxFactor   uint
-	RoutineNum uint // whole tx save to RoutineNum files, and one go-routine per file
-	TPS        uint
-	GasPrice   uint64
-	GasLimit   uint64
-	SaveTx     bool
-	SendTx     bool
+	Wallet            string
+	Password          string
+	ConsensusPeerPath [][2]string
+	ContractCodePath  string
+	Contract          string
+	To                string
+	Amount            uint64
+	Rpc               []string
+	TxNum             uint // whole tx num is *TxFactor
+	TxFactor          uint
+	RoutineNum        uint // whole tx save to RoutineNum files, and one go-routine per file
+	TPS               uint
+	GasPrice          uint64
+	GasLimit          uint64
+	SaveTx            bool
+	SendTx            bool
 }
 
 func ParseConfig(path string) (*Config, error) {
