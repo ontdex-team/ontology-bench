@@ -74,7 +74,7 @@ func main() {
 		rpcClient.SetAddress(cfg.Rpc[0])
 		sdk.SetDefaultClient(rpcClient)
 		addr := account.Address
-		if len(os.Args) > 4 {
+		if len(os.Args) >= 4 {
 			argAddr, err := utils.AddressFromBase58(os.Args[3])
 			if err != nil {
 				log.Errorf("decode arg %s to address failed, err: %s", os.Args[3], err)
@@ -108,6 +108,7 @@ func testOep4Transfer(cfg *config.Config, account *goSdk.Account) {
 	exitChan := make(chan int)
 	txNumPerRoutine := txNum / cfg.RoutineNum
 	tpsPerRoutine := int64(cfg.TPS / cfg.RoutineNum)
+	startTestTime := time.Now().UnixNano() / 1e6
 	for i := uint(0); i < cfg.RoutineNum; i++ {
 		go func(nonce uint32, routineIndex uint) {
 			sendTxSdk := goSdk.NewOntologySdk()
@@ -172,6 +173,8 @@ func testOep4Transfer(cfg *config.Config, account *goSdk.Account) {
 	for i := uint(0); i < cfg.RoutineNum; i++ {
 		<-exitChan
 	}
+	endTestTime := time.Now().UnixNano() / 1e6
+	log.Infof("send tps is %f", float64(txNum)/float64(endTestTime-startTestTime))
 }
 
 func balanceOf(cfg *config.Config, sdk *goSdk.OntologySdk, address common.Address) {
