@@ -43,10 +43,10 @@
       "123456"
     ]
   ],
-  "TxNum": 10,
+  "TxNum": 100,
   "TxFactor": 1,
-  "RoutineNum": 2,
-  "TPS": 10,
+  "RoutineNum": 1,
+  "TPS": 1,
   "SaveTx": true,
   "SendTx": true
 }

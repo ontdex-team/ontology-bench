@@ -114,7 +114,7 @@ func testOep4Transfer(cfg *config.Config, account *goSdk.Account) {
 			rpcClient := client.NewRpcClient()
 			rpcClient.SetAddress(cfg.Rpc[int(routineIndex)%len(cfg.Rpc)])
 			sendTxSdk.SetDefaultClient(rpcClient)
-			startTime := time.Now().Unix()
+			startTime := time.Now().UnixNano() / 1e6 // ms
 			sentNum := int64(0)
 			var fileObj *os.File
 			if cfg.SaveTx {
@@ -145,12 +145,12 @@ func testOep4Transfer(cfg *config.Config, account *goSdk.Account) {
 						log.Infof("send tx %s", hash.ToHexString())
 					}
 					sentNum++
-					now := time.Now().Unix()
-					diff := sentNum - (now-startTime)*tpsPerRoutine
+					now := time.Now().UnixNano() / 1e6 // ms
+					diff := sentNum - (now-startTime)/1e3*tpsPerRoutine
 					if now > startTime && diff > 0 {
 						sleepTime := time.Duration(diff*1000/tpsPerRoutine) * time.Millisecond
 						time.Sleep(sleepTime)
-						log.Infof("sleep %d ms", sleepTime)
+						log.Infof("sleep %d ms", sleepTime.Nanoseconds()/1e6)
 					}
 				}
 				nonce++
