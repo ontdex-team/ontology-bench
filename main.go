@@ -14,21 +14,65 @@ import (
 	"time"
 )
 
+const (
+	INIT_PRIVATE_NETWORK = "init"
+	TEST_BY_CONFIG       = "test"
+)
+
 func main() {
 	log.InitLog(log.InfoLog, log.PATH, log.Stdout)
-	configPath := os.Args[1]
+	if len(os.Args) < 2 {
+		log.Errorf("not enough args")
+	}
+	cmd := os.Args[1]
+	configPath := "config.json"
+	if len(os.Args) >= 3 {
+		configPath = os.Args[2]
+	}
 	cfg, err := config.ParseConfig(configPath)
 	if err != nil {
 		log.Error(err)
 		return
 	}
 	sdk := goSdk.NewOntologySdk()
-	var wallet, _ = sdk.OpenWallet(cfg.Wallet)
+	wallet, err := sdk.OpenWallet(cfg.Wallet)
+	if err != nil {
+		log.Errorf("parse wallet err: %s", err)
+		return
+	}
 	account, err := wallet.GetDefaultAccount([]byte(cfg.Password))
 	if err != nil {
 		log.Errorf("get account err: %s", err)
 		return
 	}
+	if cmd == INIT_PRIVATE_NETWORK {
+		consensusAccounts := make([]*goSdk.Account, 0)
+		for _, consensusWallet := range cfg.ConsensusPeerPath {
+			wallet, err := sdk.OpenWallet(consensusWallet[0])
+			if err != nil {
+				log.Errorf("parse consensus wallet err: %s", err)
+				return
+			}
+			account, err := wallet.GetDefaultAccount([]byte(consensusWallet[1]))
+			if err != nil {
+				log.Errorf("get consensus account err: %s", err)
+				return
+			}
+			consensusAccounts = append(consensusAccounts, account)
+		}
+		config.SetGasPrice(sdk, consensusAccounts, 500)
+		config.WithdrawAsset(sdk, consensusAccounts, account)
+		config.DeployOep4(sdk, account, cfg.ContractCodePath)
+	} else if cmd == TEST_BY_CONFIG {
+		testOep4Transfer(cfg, account)
+	} else {
+		log.Errorf("not support cmd")
+		return
+	}
+
+}
+
+func testOep4Transfer(cfg *config.Config, account *goSdk.Account) {
 	txNum := cfg.TxNum * cfg.TxFactor
 	if txNum > math.MaxUint32 {
 		txNum = math.MaxUint32
@@ -65,7 +109,7 @@ func main() {
 				}
 			}
 			for j := uint(0); j < txNumPerRoutine; j++ {
-				mutTx, err := sendTxSdk.NeoVM.NewNeoVMInvokeTransaction(cfg.GasLimit, cfg.GasLimit, contractAddress, params)
+				mutTx, err := sendTxSdk.NeoVM.NewNeoVMInvokeTransaction(cfg.GasPrice, cfg.GasLimit, contractAddress, params)
 				if err != nil {
 					fmt.Println("contract tx err", err)
 					os.Exit(1)
@@ -106,7 +150,7 @@ func main() {
 				}
 			}
 			exitChan <- 1
-		}(uint32(txNumPerRoutine*i), i)
+		}(uint32(txNumPerRoutine*i)+3, i)
 	}
 	for i := uint(0); i < cfg.RoutineNum; i++ {
 		<-exitChan

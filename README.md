@@ -9,7 +9,8 @@ test ontology tps, only support oep-4 token transfer bench at current.
 ```
 {
   "Wallet": "wallet.dat", // wallet path
-  "Password": "passwordtest", // account password
+  "Password": "123456", // account password
+  "ContractCodePath": "myt.avm", // contract vm code
   "Contract": "4ef9e947c975eacb60c75b542c8d2fea36e09c65", // contract address
   "To": "AdTgdGPjahJjubZU19AwBu9F3oE4hncx4u", // to account
   "Amount": 1, // amount per transfer
@@ -21,6 +22,36 @@ test ontology tps, only support oep-4 token transfer bench at current.
     "http://polaris3.ont.io:20336",
     "http://polaris4.ont.io:20336"
   ], // ontology network rpc address
+  "ConsensusPeerPath": [ // consensus node wallet
+      [
+        "peer1.dat",
+        "123456"
+      ],
+      [
+        "peer2.dat",
+        "123456"
+      ],
+      [
+        "peer3.dat",
+        "123456"
+      ],
+      [
+        "peer4.dat",
+        "123456"
+      ],
+      [
+        "peer5.dat",
+        "123456"
+      ],
+      [
+        "peer6.dat",
+        "123456"
+      ],
+      [
+        "peer7.dat",
+        "123456"
+      ]
+    ],
   "TxNum": 100, // tx num per factor
   "TxFactory": 1, // tx factor
   "RoutineNum": 2, // use go routine to handle bench
@@ -40,4 +71,16 @@ build:
 ``` go build -o main main.go ```
 
 run:
-``` ./main config.json```
+
+case "init":
+ 
+if you deployed a ontology private network, you should:
+1. withdraw ont and ong from multi-sign address construct by whole consensus node;
+2. set gas price to 500 to charge transaction fee to governance contract;
+3. deploy your oep4 token;
+
+``` ./main init config.json```
+
+case "test"
+
+```./main test config.json```
