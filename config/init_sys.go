@@ -1,18 +1,22 @@
 package config
 
 import (
+	"encoding/hex"
 	"fmt"
 	"github.com/dexServer/log"
 	"github.com/ontio/ontology-crypto/keypair"
 	goSdk "github.com/ontio/ontology-go-sdk"
+	"github.com/ontio/ontology/common"
 	"github.com/ontio/ontology/core/types"
 	"io/ioutil"
+	"strings"
 	"time"
 )
 
 const (
-	DEFAULT_GAS_PRICE = 0
-	DEFAULT_GAS_LIMIT = 20000
+	DEFAULT_GAS_PRICE       = 0
+	DEFAULT_GAS_LIMIT       = 20000
+	DEFAULT_DEPLOY_GASLIMIT = 200000000
 )
 
 func SetGasPrice(sdk *goSdk.OntologySdk, consensusAccounts []*goSdk.Account, gasPrice uint64) {
@@ -54,7 +58,7 @@ func WithdrawAsset(sdk *goSdk.OntologySdk, consensusAccounts []*goSdk.Account, d
 			err)
 		return
 	}
-	log.Infof("WithdrawAsset: multi sign addr %s ont balance is %s", multiSignAddr.ToBase58(), ontBalance)
+	log.Infof("WithdrawAsset: multi sign addr %s ont balance is %d", multiSignAddr.ToBase58(), ontBalance)
 	log.Infof("WithdrawAsset: start withdraw ont...")
 	withdrawOntTx, err := sdk.Native.Ont.NewTransferTransaction(DEFAULT_GAS_PRICE, DEFAULT_GAS_LIMIT, multiSignAddr,
 		destAcc.Address, ontBalance)
@@ -80,15 +84,14 @@ func WithdrawAsset(sdk *goSdk.OntologySdk, consensusAccounts []*goSdk.Account, d
 	}
 	log.Infof("WithdrawAsset: completed withdraw ont")
 	log.Infof("WithdrawAsset: start withdraw ong...")
-	ongBalance, err := sdk.Native.Ong.BalanceOf(multiSignAddr)
+	uboundOng, err := sdk.Native.Ong.UnboundONG(multiSignAddr)
 	if err != nil {
-		log.Errorf("WithdrawAsset: get multi sign addr %s ong balance failed, err: %s", multiSignAddr.ToBase58(),
-			err)
+		log.Errorf("WithdrawAsset: get unbound ong num failed, err: %s", err)
 		return
 	}
-	log.Infof("WithdrawAsset: multi sign addr %s ong balance is %s", multiSignAddr.ToBase58(), ongBalance)
+	log.Infof("WithdrawAsset: multi sign addr %s unbound ong is %d", multiSignAddr.ToBase58(), uboundOng)
 	withdrawOngTx, err := sdk.Native.Ong.NewTransferFromTransaction(DEFAULT_GAS_PRICE, DEFAULT_GAS_LIMIT, multiSignAddr,
-		goSdk.ONT_CONTRACT_ADDRESS, destAcc.Address, ongBalance)
+		goSdk.ONT_CONTRACT_ADDRESS, destAcc.Address, uboundOng)
 	if err != nil {
 		log.Errorf("WithdrawAsset: build withdraw ong tx failed, err: %s", err)
 		return
@@ -112,18 +115,32 @@ func WithdrawAsset(sdk *goSdk.OntologySdk, consensusAccounts []*goSdk.Account, d
 	log.Infof("WithdrawAsset: completed withdraw ong")
 }
 
-func DeployOep4(sdk *goSdk.OntologySdk, acc *goSdk.Account, avmPath string) {
+func InitOep4(sdk *goSdk.OntologySdk, acc *goSdk.Account, avmPath string) {
 	fileContent, err := ioutil.ReadFile(avmPath)
 	if err != nil {
-		log.Errorf("DeployOep4: read source code failed, err: %s", err)
+		log.Errorf("InitOep4: read source code failed, err: %s", err)
 		return
 	}
-	hash, err := sdk.NeoVM.DeployNeoVMSmartContract(DEFAULT_GAS_PRICE, DEFAULT_GAS_LIMIT, acc, true,
-		string(fileContent), "MYT", "1.0", "my", "1@1.com", "test")
+	contractStr := strings.TrimSpace(string(fileContent))
+	deployHash, err := sdk.NeoVM.DeployNeoVMSmartContract(DEFAULT_GAS_PRICE, DEFAULT_DEPLOY_GASLIMIT, acc, true,
+		contractStr, "MYT", "1.0", "my", "1@1.com", "test")
 	if err != nil {
-		log.Errorf("DeployOep4: deploy failed, err: %s", err)
+		log.Errorf("InitOep4: deploy failed, err: %s", err)
+		return
 	}
-	log.Infof("DeployOep4: success, tx hash is %s", hash.ToHexString())
+	log.Infof("InitOep4: deploy success, tx hash is %s", deployHash.ToHexString())
+	avmCode, err := hex.DecodeString(contractStr)
+	if err != nil {
+		log.Errorf("InitOep4: decode avm code failed, err: %s", err)
+	}
+	contractAddr := common.AddressFromVmCode(avmCode)
+	initHash, err := sdk.NeoVM.InvokeNeoVMContract(DEFAULT_GAS_PRICE, DEFAULT_GAS_LIMIT, acc, contractAddr,
+		[]interface{}{"init", []interface{}{}})
+	if err != nil {
+		log.Errorf("InitOep4: init contract failed, err: %s", err)
+		return
+	}
+	log.Infof("InitOep4: init contract %s success, tx hash is %s", contractAddr.ToHexString(), initHash.ToHexString())
 }
 
 func MultiSign(tx *types.MutableTransaction, sdk *goSdk.OntologySdk, consensusAccounts []*goSdk.Account) error {
@@ -135,7 +152,7 @@ func MultiSign(tx *types.MutableTransaction, sdk *goSdk.OntologySdk, consensusAc
 	for index, account := range consensusAccounts {
 		err := sdk.MultiSignToTransaction(tx, m, pubKeys, account)
 		if err != nil {
-			return fmt.Errorf("MultiSign: index %s, account %s failed, err: %s", index, account.Address.ToBase58(), err)
+			return fmt.Errorf("MultiSign: index %d, account %s failed, err: %s", index, account.Address.ToBase58(), err)
 		}
 	}
 	return nil

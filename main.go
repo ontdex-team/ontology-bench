@@ -66,7 +66,7 @@ func main() {
 		sdk.SetDefaultClient(rpcClient)
 		config.SetGasPrice(sdk, consensusAccounts, 500)
 		config.WithdrawAsset(sdk, consensusAccounts, account)
-		config.DeployOep4(sdk, account, cfg.ContractCodePath)
+		config.InitOep4(sdk, account, cfg.ContractCodePath)
 	} else if cmd == TEST_BY_CONFIG {
 		testOep4Transfer(cfg, account)
 	} else if cmd == BALANCE_OF {
