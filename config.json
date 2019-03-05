@@ -47,6 +47,7 @@
   "TxFactor": 1,
   "RoutineNum": 1,
   "TPS": 1,
+  "StartNonce": 0,
   "SaveTx": true,
   "SendTx": true
 }

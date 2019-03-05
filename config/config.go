@@ -19,6 +19,7 @@ type Config struct {
 	TxFactor          uint
 	RoutineNum        uint // whole tx save to RoutineNum files, and one go-routine per file
 	TPS               uint
+	StartNonce        uint32
 	GasPrice          uint64
 	GasLimit          uint64
 	SaveTx            bool

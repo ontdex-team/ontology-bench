@@ -167,7 +167,7 @@ func testOep4Transfer(cfg *config.Config, account *goSdk.Account) {
 				}
 			}
 			exitChan <- 1
-		}(uint32(txNumPerRoutine*i)+3, i)
+		}(uint32(txNumPerRoutine*i)+cfg.StartNonce, i)
 	}
 	for i := uint(0); i < cfg.RoutineNum; i++ {
 		<-exitChan
