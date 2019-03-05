@@ -17,6 +17,7 @@ import (
 const (
 	INIT_PRIVATE_NETWORK = "init"
 	TEST_BY_CONFIG       = "test"
+	BALANCE_OF           = "balanceOf"
 )
 
 func main() {
@@ -60,13 +61,29 @@ func main() {
 			}
 			consensusAccounts = append(consensusAccounts, account)
 		}
+		rpcClient := client.NewRpcClient()
+		rpcClient.SetAddress(cfg.Rpc[0])
+		sdk.SetDefaultClient(rpcClient)
 		config.SetGasPrice(sdk, consensusAccounts, 500)
 		config.WithdrawAsset(sdk, consensusAccounts, account)
 		config.DeployOep4(sdk, account, cfg.ContractCodePath)
 	} else if cmd == TEST_BY_CONFIG {
 		testOep4Transfer(cfg, account)
+	} else if cmd == BALANCE_OF {
+		rpcClient := client.NewRpcClient()
+		rpcClient.SetAddress(cfg.Rpc[0])
+		sdk.SetDefaultClient(rpcClient)
+		addr := account.Address
+		if len(os.Args) > 4 {
+			argAddr, err := utils.AddressFromBase58(os.Args[3])
+			if err != nil {
+				log.Errorf("decode arg %s to address failed, err: %s", os.Args[3], err)
+			}
+			addr = argAddr
+		}
+		balanceOf(cfg, sdk, addr)
 	} else {
-		log.Errorf("not support cmd")
+		log.Errorf("un support cmd")
 		return
 	}
 
@@ -155,4 +172,23 @@ func testOep4Transfer(cfg *config.Config, account *goSdk.Account) {
 	for i := uint(0); i < cfg.RoutineNum; i++ {
 		<-exitChan
 	}
+}
+
+func balanceOf(cfg *config.Config, sdk *goSdk.OntologySdk, address common.Address) {
+	contractAddr, err := utils.AddressFromHexString(cfg.Contract)
+	if err != nil {
+		log.Errorf("balanceOf: decode contract addr failed, err: %s", err)
+		return
+	}
+	preResult, err := sdk.NeoVM.PreExecInvokeNeoVMContract(contractAddr, []interface{}{"balanceOf", []interface{}{address}})
+	if err != nil {
+		log.Errorf("balanceOf: pre-execute failed, err: %s", err)
+		return
+	}
+	balance, err := preResult.Result.ToInteger()
+	if err != nil {
+		log.Errorf("balanceOf: parse result %v failed, err: %s", preResult, err)
+		return
+	}
+	log.Infof("balanceOf: addr %s is %d", address.ToBase58(), balance)
 }
