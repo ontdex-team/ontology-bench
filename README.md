@@ -84,3 +84,7 @@ if you deployed a ontology private network, you should:
 case "test"
 
 ```./main test config.json```
+
+case "balanceOf"
+
+```./main balanceOf config.json APPUBiR8LUVa6ZkGfQ7RG3VvuYYBqA9D4h```
