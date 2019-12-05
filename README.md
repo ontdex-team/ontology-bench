@@ -74,17 +74,27 @@ run:
 
 case "init":
  
-if you deployed a ontology private network, you should:
+if you deployed a ontology private network, you would:
 1. withdraw ont and ong from multi-sign address construct by whole consensus node;
 2. set gas price to 500 to charge transaction fee to governance contract;
 3. deploy your oep4 token;
 
 ``` ./main init config.json```
 
-case "test"
+case "test-oep4"
 
-```./main test config.json```
+```./main test-oep4 config.json```
+
+case "test-ont"
+
+```./main test-ont config.json```
+
+case "test-ong"
+
+```./main test-ong config.json```
 
 case "balanceOf"
+
+only query oep4 token balance now
 
 ```./main balanceOf config.json APPUBiR8LUVa6ZkGfQ7RG3VvuYYBqA9D4h```
