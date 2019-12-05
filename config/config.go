@@ -6,6 +6,14 @@ import (
 	"io/ioutil"
 )
 
+type Token uint8
+
+const (
+	ONT Token = iota
+	ONG
+	OEP4
+)
+
 type Config struct {
 	Wallet            string
 	Password          string

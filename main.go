@@ -8,6 +8,7 @@ import (
 	"github.com/ontio/ontology-go-sdk/utils"
 	"github.com/ontio/ontology/common"
 	"github.com/ontio/ontology/common/log"
+	"github.com/ontio/ontology/core/types"
 	"math"
 	"os"
 	"time"
@@ -15,7 +16,9 @@ import (
 
 const (
 	INIT_PRIVATE_NETWORK = "init"
-	TEST_BY_CONFIG       = "test"
+	TEST_OEP4            = "test-oep4"
+	TEST_ONT             = "test-ont"
+	TEST_ONG             = "test-ong"
 	BALANCE_OF           = "balanceOf"
 )
 
@@ -66,8 +69,12 @@ func main() {
 		config.SetGasPrice(sdk, consensusAccounts, 500)
 		config.WithdrawAsset(sdk, consensusAccounts, account)
 		config.InitOep4(sdk, account, cfg.ContractCodePath)
-	} else if cmd == TEST_BY_CONFIG {
-		testOep4Transfer(cfg, account)
+	} else if cmd == TEST_OEP4 {
+		testTransfer(cfg, account, config.OEP4)
+	} else if cmd == TEST_ONT {
+		testTransfer(cfg, account, config.ONT)
+	} else if cmd == TEST_ONG {
+		testTransfer(cfg, account, config.ONG)
 	} else if cmd == BALANCE_OF {
 		rpcClient := client.NewRpcClient()
 		rpcClient.SetAddress(cfg.Rpc[0])
@@ -88,7 +95,7 @@ func main() {
 
 }
 
-func testOep4Transfer(cfg *config.Config, account *goSdk.Account) {
+func testTransfer(cfg *config.Config, account *goSdk.Account, token config.Token) {
 	txNum := cfg.TxNum * cfg.TxFactor
 	if txNum > math.MaxUint32 {
 		txNum = math.MaxUint32
@@ -103,7 +110,22 @@ func testOep4Transfer(cfg *config.Config, account *goSdk.Account) {
 		log.Errorf("parse to addr failed, err: %s", err)
 		return
 	}
-	params := []interface{}{"transfer", []interface{}{account.Address, toAddr, cfg.Amount}}
+	genTxSdk := goSdk.NewOntologySdk()
+	var mutTx *types.MutableTransaction
+	if token == config.ONT {
+		mutTx, err = genTxSdk.Native.Ont.NewTransferTransaction(cfg.GasPrice, cfg.GasLimit, account.Address, toAddr,
+			cfg.Amount)
+	} else if token == config.ONG {
+		mutTx, err = genTxSdk.Native.Ont.NewTransferTransaction(cfg.GasPrice, cfg.GasLimit, account.Address, toAddr,
+			cfg.Amount*100000000)
+	} else {
+		params := []interface{}{"transfer", []interface{}{account.Address, toAddr, cfg.Amount}}
+		mutTx, err = genTxSdk.NeoVM.NewNeoVMInvokeTransaction(cfg.GasPrice, cfg.GasLimit, contractAddress, params)
+	}
+	if err != nil {
+		fmt.Println("construct tx err", err)
+		os.Exit(1)
+	}
 	exitChan := make(chan int)
 	txNumPerRoutine := txNum / cfg.RoutineNum
 	tpsPerRoutine := int64(cfg.TPS / cfg.RoutineNum)
@@ -126,15 +148,8 @@ func testOep4Transfer(cfg *config.Config, account *goSdk.Account) {
 				}
 			}
 			for j := uint(0); j < txNumPerRoutine; j++ {
-				mutTx, err := sendTxSdk.NeoVM.NewNeoVMInvokeTransaction(cfg.GasPrice, cfg.GasLimit, contractAddress, params)
-				if err != nil {
-					fmt.Println("contract tx err", err)
-					os.Exit(1)
-				}
-				mutTx.Nonce = nonce
-				err = sendTxSdk.SignToTransaction(mutTx, account)
-				if err != nil {
-					log.Errorf("sign tx failed, err: %s", err)
+				if err := signTx(sendTxSdk, mutTx, nonce, account); err != nil {
+					log.Error(err)
 					continue
 				}
 				if cfg.SendTx {
@@ -190,4 +205,13 @@ func balanceOf(cfg *config.Config, sdk *goSdk.OntologySdk, address common.Addres
 		return
 	}
 	log.Infof("balanceOf: addr %s is %d", address.ToBase58(), balance)
+}
+
+func signTx(sdk *goSdk.OntologySdk, tx *types.MutableTransaction, nonce uint32, signer goSdk.Signer) error {
+	tx.Nonce = nonce
+	err := sdk.SignToTransaction(tx, signer)
+	if err != nil {
+		return fmt.Errorf("sign tx failed, err: %s", err)
+	}
+	return nil
 }
