@@ -1,14 +1,13 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
+	"github.com/ontdex-team/ontology-bench/config"
 	goSdk "github.com/ontio/ontology-go-sdk"
 	"github.com/ontio/ontology-go-sdk/client"
 	"github.com/ontio/ontology-go-sdk/utils"
 	"github.com/ontio/ontology/common"
 	"github.com/ontio/ontology/common/log"
-	"github.com/ontology-bench/config"
 	"math"
 	"os"
 	"time"
@@ -158,12 +157,9 @@ func testOep4Transfer(cfg *config.Config, account *goSdk.Account) {
 				if cfg.SaveTx {
 					tx, _ := mutTx.IntoImmutable()
 					txHash := tx.Hash()
-					txbf := new(bytes.Buffer)
-					if err := tx.Serialize(txbf); err != nil {
-						fmt.Println("Serialize transaction error.", err)
-						os.Exit(1)
-					}
-					txContent := common.ToHexString(txbf.Bytes())
+					sink := common.NewZeroCopySink(nil)
+					tx.Serialization(sink)
+					txContent := common.ToHexString(sink.Bytes())
 					fileObj.WriteString(txHash.ToHexString() + "," + txContent + "\n")
 				}
 			}
