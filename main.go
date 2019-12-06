@@ -116,7 +116,7 @@ func testTransfer(cfg *config.Config, account *goSdk.Account, token config.Token
 		mutTx, err = genTxSdk.Native.Ont.NewTransferTransaction(cfg.GasPrice, cfg.GasLimit, account.Address, toAddr,
 			cfg.Amount)
 	} else if token == config.ONG {
-		mutTx, err = genTxSdk.Native.Ont.NewTransferTransaction(cfg.GasPrice, cfg.GasLimit, account.Address, toAddr,
+		mutTx, err = genTxSdk.Native.Ong.NewTransferTransaction(cfg.GasPrice, cfg.GasLimit, account.Address, toAddr,
 			cfg.Amount*100000000)
 	} else {
 		params := []interface{}{"transfer", []interface{}{account.Address, toAddr, cfg.Amount}}
